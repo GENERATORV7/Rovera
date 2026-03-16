@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rovera | Brand Strategy Simulator</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@200;300;400;600&family=Alex+Brush&family=Cormorant+Garamond:ital,wght@1,500&family=Syne:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0a; --gold: #d4af37; --text-light: #f5f5f5; --text-muted: #999;
+            --glass-bg: rgba(255, 255, 255, 0.03); --transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            --live-bg: #111; --live-color: #d4af37; --live-font: 'Playfair Display', serif;
+            --live-shadow: rgba(212, 175, 55, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg-dark); color: var(--text-light); display: flex; height: 100vh; overflow: hidden; line-height: 1.6; }
+
+        /* شريط التقدم الذهبي العلوي */
+        .top-progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.05); z-index: 9999; }
+        .top-progress-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 10px var(--gold); }
+
+        /* التخطيط الرئيسي */
+        .app-container { display: flex; width: 100vw; height: 100vh; flex-direction: row; }
+
+        .controls-panel { width: 50%; height: 100%; padding: 40px 50px; overflow-y: auto; position: relative; z-index: 10; border-left: 1px solid rgba(255,255,255,0.05); scroll-behavior: smooth;}
+        .preview-panel { width: 50%; height: 100%; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--live-bg); transition: background 0.8s ease; overflow: hidden; }
+
+        .preview-overlay { position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; transition: var(--transition); opacity: 0; z-index: 1; }
+        .texture-gradient { background: linear-gradient(45deg, var(--live-shadow) 0%, transparent 100%); opacity: 0.8; }
+        .texture-noise { background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.35; }
+        .texture-glow { background: radial-gradient(circle at center, var(--live-shadow) 0%, transparent 70%); opacity: 0.6; }
+
+        .header { margin-bottom: 30px; }
+        .header h1 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 2.2rem; letter-spacing: 1px; }
+        .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 5px; }
+
+        .step-container { display: none; animation: fadeIn 0.4s ease forwards; padding-bottom: 20px;}
+        .step-container.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .question-title { font-size: 1.25rem; color: #fff; margin-bottom: 20px; border-right: 3px solid var(--gold); padding-right: 15px; display: flex; align-items: center; gap: 10px; font-weight: 700; }
+
+        .founder-card { background: rgba(255,255,255,0.03); border-right: 3px solid var(--gold); padding: 18px 25px; border-radius: 10px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; transition: var(--transition); border-left: 1px solid rgba(255,255,255,0.05); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);}
+        .founder-card:hover { transform: translateX(-5px); background: rgba(212, 175, 55, 0.05); box-shadow: 0 5px 15px rgba(0,0,0,0.2);}
+        .founder-name { margin: 0; color: #fff; font-size: 1.2rem; font-family: 'Playfair Display', serif; letter-spacing: 1px; }
+
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+        .option-card { background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; cursor: pointer; transition: var(--transition); display: flex; align-items: flex-start; gap: 15px; position: relative; }
+        .option-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        .option-card.selected { border-color: var(--gold); background: rgba(212, 175, 55, 0.08); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .option-card.selected::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--gold); position: absolute; top: 18px; left: 15px; font-size: 14px; }
+        
+        .opt-icon { font-size: 22px; color: var(--gold); width: 30px; text-align: center; margin-top: 2px; }
+        .opt-text h3 { font-size: 1.05rem; margin-bottom: 5px; color: #fff; font-weight: 700;}
+        .opt-text p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; font-weight: 300;}
+
+        .input-group { margin-bottom: 25px; }
+        .input-group label { display: block; color: var(--gold); margin-bottom: 8px; font-weight: 700; font-size: 1.05rem; }
+        .input-group p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 300;}
+        .input-group input, .input-group textarea, .input-group select { width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; color: #fff; font-family: 'Tajawal', sans-serif; transition: 0.3s; resize: none; font-size: 1rem; }
+        .input-group input:focus, .input-group textarea:focus, .input-group select:focus { outline: none; border-color: var(--gold); background: rgba(0,0,0,0.6); }
+        .input-group select option { background: var(--bg-dark); color: #fff; }
+
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 35px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.05); }
+        button { padding: 12px 35px; border-radius: 30px; font-family: 'Tajawal', sans-serif; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: 0.3s; border: none; display: flex; align-items: center; gap: 10px; }
+        .btn-next { background: var(--gold); color: #000; }
+        .btn-next:hover { box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); transform: scale(1.02); }
+        .btn-prev { background: transparent; color: #ccc; border: 1px solid #555; }
+        .btn-prev:hover { background: #333; color: #fff; }
+        .btn-whatsapp { background: #25D366; color: #fff; width: 100%; justify-content: center; padding: 15px; font-size: 1.1rem; margin-top: 20px;}
+        .btn-whatsapp:hover { background: #128C7E; transform: scale(1.02); box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3); }
+
+        /* تأثير النبض لزر التالي */
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+        .btn-next.ready-to-go {
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        #live-canvas { display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; text-align: center; transition: var(--transition); }
+        #live-icon { font-size: 60px; margin-bottom: 20px; color: var(--live-color); transition: var(--transition); display: none; }
+        #live-text { font-family: var(--live-font); font-size: 4rem; color: var(--live-color); transition: var(--transition); letter-spacing: 2px; line-height: 1.1; }
+        #live-sub { font-family: 'Montserrat', sans-serif; font-size: 0.85rem; letter-spacing: 6px; color: var(--live-color); opacity: 0.7; margin-top: 15px; transition: var(--transition); text-transform: uppercase; }
+
+        .insight-box { position: absolute; bottom: 30px; width: 85%; max-width: 480px; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 20px 25px; text-align: right; transform: translateY(20px); opacity: 0; transition: var(--transition); z-index: 10; pointer-events: none;}
+        .insight-box.visible { transform: translateY(0); opacity: 1; }
+        .insight-title { color: var(--gold); font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+        .insight-text { color: #eaeaea; font-size: 0.95rem; line-height: 1.6; font-weight: 300;}
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; height: 100dvh; }
+            .preview-panel { width: 100%; height: 35vh; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+            .controls-panel { width: 100%; height: 65vh; padding: 25px 20px; border-left: none; }
+            #live-text { font-size: 2.5rem !important; }
+            #live-icon { font-size: 40px !important; }
+            #live-sub { font-size: 0.6rem !important; margin-top: 10px; letter-spacing: 4px; }
+            .insight-box { display: none; }
+            .options-grid { grid-template-columns: 1fr; gap: 10px;}
+            .header h1 { font-size: 1.8rem; }
+            .question-title { font-size: 1.15rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- شريط التقدم -->
+<div class="top-progress-bar">
+    <div class="top-progress-fill" id="progress-bar"></div>
+</div>
+
+<div class="app-container">
+
+    <div class="controls-panel">
+        <div class="header">
+            <h1>ROVERA Discovery Deck</h1>
+            <p>التجربة البصرية الحية. اكتشف الخيارات، عاين التأثير، ثم حدد مسار هويتك.</p>
+        </div>
+
+        <!-- 0. شاشة الترحيب -->
+        <div class="step-container active" id="step-0">
+            <!-- التعديل هنا: تم تغيير كلمة إمبراطورية إلى شركة -->
+            <h2 style="font-size: 1.8rem; margin-bottom: 10px; color: var(--gold); font-weight: 700;">بناء شركة ROVERA 🌿</h2>
+            <p style="color: #fff; font-size: 1.15rem; margin-bottom: 25px; font-weight: 300;">نرحب بشركاء النجاح وصناع الرؤية:</p>
+
+            <div style="display: flex; flex-direction: column; margin-bottom: 35px;">
+                <div class="founder-card"><i class="fas fa-user-tie" style="color: var(--gold); font-size: 1.6rem; width: 30px; text-align: center;"></i><h3 class="founder-name">Dr. Muhammad Hosni</h3></div>
+                <div class="founder-card"><i class="fas fa-user-tie" style="color: var(--gold); font-size: 1.6rem; width: 30px; text-align: center;"></i><h3 class="founder-name">Dr. Huda Ezzat</h3></div>
+                <div class="founder-card"><i class="fas fa-user-tie" style="color: var(--gold); font-size: 1.6rem; width: 30px; text-align: center;"></i><h3 class="founder-name">Dr. Ahmed Ayman</h3></div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(212, 175, 55, 0.2); padding: 25px; border-radius: 12px; margin-bottom: 30px;">
+                <h4 style="color: var(--gold); margin-bottom: 12px; font-size: 1.15rem;"><i class="fas fa-gem"></i> لماذا هذه التجربة الاستراتيجية؟</h4>
+                <p style="color: #ddd; font-size: 1rem; line-height: 1.8; font-weight: 300;">
+                    العلامة التجارية القوية ليست مجرد "لوجو جميل"، بل هي <strong>الحمض النووي (DNA)</strong> الذي يربط منتجاتكم الطبية والتجميلية بقلب وعقل العميل.<br><br>
+                    هذا المحاكي البصري تم تصميمه خصيصاً لكم لترجمة خبرتكم الطبية ورؤيتكم الاستثمارية إلى لغة بصرية (ألوان، خطوط، ملمس). إجاباتكم هنا هي الأساس الاستراتيجي الذي سنبني عليه هوية ROVERA لتكتسح أرفف الصيدليات وتكسب ثقة المستهلك.
+                </p>
+            </div>
+
+            <div class="nav-buttons" style="border: none; margin-top: 0; padding-top: 0;">
+                <button type="button" class="btn-next" style="width: 100%; justify-content: center; padding: 18px; font-size: 1.2rem;" onclick="nextStep(1)">بدء الرحلة الاستراتيجية <i class="fas fa-rocket"></i></button>
+            </div>
+        </div>
+
+        <!-- 1. المزاج اللوني -->
+        <div class="step-container" id="step-1">
+            <h2 class="question-title"><i class="fas fa-palette"></i> 1. الهوية اللونية للماركة</h2>
+            <div class="options-grid">
+                <div class="option-card" data-category="color" data-bg="#0a0a0a" data-color="#d4af37" data-name="فخامة ليلية (أسود وذهبي)" data-insight="الأسود والذهبي: فخامة مطلقة، حصري، يبرر الأسعار المرتفعة ويرتبط بروتين العناية المسائي المترف.">
+                    <div class="opt-icon"><i class="fas fa-moon"></i></div><div class="opt-text"><h3>فخامة ليلية</h3><p>أسود وذهبي مطفي</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#ffffff" data-color="#111111" data-name="نقاء طبي (أبيض وأسود)" data-insight="الأبيض الساطع: يعكس النظافة، الشفافية، والتركيز العلمي الصارم. يبني شعوراً بالفعالية الطبية والأمان.">
+                    <div class="opt-icon"><i class="fas fa-clinic-medical"></i></div><div class="opt-text"><h3>نقاء طبي</h3><p>أبيض ساطع وأسود نقي</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#1e2b22" data-color="#e8dcc5" data-name="نباتي غني (أخضر وبيج)" data-insight="الأخضر الداكن: يربط العلامة بالطبيعة والاستدامة. يعطي شعوراً فورياً بأن المنتج مستخلص من نباتات آمنة وعضوية.">
+                    <div class="opt-icon"><i class="fas fa-leaf"></i></div><div class="opt-text"><h3>نباتي غني</h3><p>أخضر غاباتي وبيج</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#d9c2b3" data-color="#4a3320" data-name="طين دافئ (ألوان النود)" data-insight="ألوان النود الترابية: تعكس النعومة ومحاكاة لون البشرة. تشعر العميل بالاحتضان وأن المنتج لطيف للاستخدام اليومي.">
+                    <div class="opt-icon"><i class="fas fa-spa"></i></div><div class="opt-text"><h3>طين دافئ</h3><p>بيج وبني دافئ</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#fdf0f0" data-color="#9a5a5a" data-name="أناقة وردية (وردي وروز جولد)" data-insight="الوردي الفاخر: أنثوي جداً، يركز على إبراز الجمال، مكافحة الشيخوخة، والنضارة الفورية.">
+                    <div class="opt-icon"><i class="fas fa-gem"></i></div><div class="opt-text"><h3>أناقة وردية</h3><p>وردي ناعم وروز جولد</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#0a192f" data-color="#ccd6f6" data-name="محيط عميق (كحلي وفضي)" data-insight="الأزرق العميق: يوحي بالترطيب العالي، إصلاح حاجز البشرة، والهدوء التام. لون يعكس الموثوقية الطبية.">
+                    <div class="opt-icon"><i class="fas fa-water"></i></div><div class="opt-text"><h3>محيط عميق</h3><p>كحلي داكن وفضي</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#8b4513" data-color="#fdf5e6" data-name="صيدلية تراثية (بني عنبري)" data-insight="لون العنبر: يذكرنا بالصيدليات القديمة الموثوقة. يبني ثقة فورية في جودة التركيبة المعالجة وعراقتها.">
+                    <div class="opt-icon"><i class="fas fa-mortar-pestle"></i></div><div class="opt-text"><h3>صيدلية تراثية</h3><p>بني عنبري وورق مقهر</p></div>
+                </div>
+                <div class="option-card" data-category="color" data-bg="#f4e6ff" data-color="#333333" data-name="باستيل شبابي (ليلكي)" data-insight="الليلك/الباستيل: مرح، شبابي، ومناسب جداً للفتيات وللظهور بقوة كعلامة تريند على منصات التواصل.">
+                    <div class="opt-icon"><i class="fas fa-bolt"></i></div><div class="opt-text"><h3>باستيل شبابي</h3><p>ليلكي فاتح وألوان مرحة</p></div>
+                </div>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(0)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(2)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 2. التايبوجرافي -->
+        <div class="step-container" id="step-2">
+            <h2 class="question-title"><i class="fas fa-font"></i> 2. نبرة الخط البصرية</h2>
+            <div class="options-grid">
+                <div class="option-card" data-category="font" data-font="'Playfair Display', serif" data-spacing="2px" data-case="uppercase" data-name="كلاسيكي عريق (Serif)" data-insight="الخطوط الكلاسيكية المذيلة تعبر عن الثقة والمكانة الراسخة. هذه لغة العلامات التي لا تتأثر بمرور الزمن.">
+                    <div class="opt-icon" style="font-family:'Playfair Display';">R</div><div class="opt-text"><h3>كلاسيكي (Serif)</h3><p>فخم، عريق، موثوق</p></div>
+                </div>
+                <div class="option-card" data-category="font" data-font="'Montserrat', sans-serif" data-spacing="10px" data-case="uppercase" data-name="عصري ومينيمال (Sans)" data-insight="الخطوط المتباعدة والواضحة تعطي مظهراً نظيفاً يركز على جوهر المنتج بدون تعقيدات بصرية.">
+                    <div class="opt-icon" style="font-family:'Montserrat';">R</div><div class="opt-text"><h3>عصري متباعد</h3><p>نظيف، مباشر، مينيمال</p></div>
+                </div>
+                <div class="option-card" data-category="font" data-font="'Alex Brush', cursive" data-spacing="0px" data-case="capitalize" data-name="توقيع شخصي (Script)" data-insight="التوقيع اليدوي يعطي إحساساً بالرعاية الحصرية وأن المنتج مصنوع بعناية شخصية فائقة.">
+                    <div class="opt-icon" style="font-family:'Alex Brush'; font-size:26px;">R</div><div class="opt-text"><h3>توقيع (Script)</h3><p>انسيابي وشخصي جداً</p></div>
+                </div>
+                <div class="option-card" data-category="font" data-font="'Cormorant Garamond', serif" data-spacing="4px" data-case="uppercase" data-fontstyle="italic" data-name="تحريري أنيق (Editorial Italic)" data-insight="الخط المائل الحاد يُستخدم في مجلات الأزياء الراقية، يعطي إحساساً بالأناقة والرفاهية المطلقة.">
+                    <div class="opt-icon" style="font-family:'Cormorant Garamond'; font-style:italic;">R</div><div class="opt-text"><h3>تحريري (Italic)</h3><p>أنيق كأغلفة المجلات</p></div>
+                </div>
+                <div class="option-card" data-category="font" data-font="'Tajawal', sans-serif" data-spacing="8px" data-case="uppercase" data-weight="300" data-name="هندسي رفيع ودقيق" data-insight="الخطوط فائقة النحافة توحي بالتكنولوجيا الحديثة والدقة في المعامل الطبية ومطابقة المعايير.">
+                    <div class="opt-icon" style="font-family:'Tajawal'; font-weight:300;">R</div><div class="opt-text"><h3>هندسي رفيع</h3><p>دقيق، علمي، مستقبلي</p></div>
+                </div>
+                <div class="option-card" data-category="font" data-font="'Syne', sans-serif" data-spacing="-1px" data-case="uppercase" data-weight="700" data-name="عريض وجريء (Bold)" data-insight="الخطوط العريضة والمتقاربة هي لغة العلامات المتمردة والجريئة التي تصنع صدمة بصرية إيجابية.">
+                    <div class="opt-icon" style="font-family:'Syne'; font-weight:700;">R</div><div class="opt-text"><h3>جريء (Bold)</h3><p>صاخب، يلفت الانتباه بقوة</p></div>
+                </div>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(1)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(3)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 3. هيكل الشعار -->
+        <div class="step-container" id="step-3">
+            <h2 class="question-title"><i class="fas fa-sitemap"></i> 3. الهيكل المعماري للشعار</h2>
+            <div class="options-grid">
+                <div class="option-card" data-category="layout" data-layout="text-only" data-name="نصي فقط (Wordmark)" data-insight="الشعار النصي يركز قوة العلامة في اسمها فقط. يعكس ثقة كبيرة وتصميماً لا يتشتت ذهنياً.">
+                    <div class="opt-icon"><i class="fas fa-font"></i></div><div class="opt-text"><h3>نصي (Wordmark)</h3><p>الاسم فقط، قوة ووضوح</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="icon-text" data-icon="fa-seedling" data-name="أيقونة ونص" data-insight="الرمز يسهل التذكر الفوري. يمكن استخدامه كختم مستقل على العبوات الصغيرة أو حسابات التواصل.">
+                    <div class="opt-icon"><i class="fas fa-shapes"></i></div><div class="opt-text"><h3>أيقونة + نص</h3><p>رمز يعبر عن الجوهر والاسم</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="lettermark" data-name="حرف مميز (Lettermark)" data-insight="استخدام الحرف الأول كأيقونة يمنح طابعاً معمارياً ذكياً. ممتاز لتصميم نقش مخصص للعبوات.">
+                    <div class="opt-icon"><i class="fab fa-neos"></i></div><div class="opt-text"><h3>حرف (Lettermark)</h3><p>تصميم مبتكر لحرف R</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="emblem" data-name="ختم كلاسيكي (Emblem)" data-insight="الختم يعطي انطباعاً بأن المنتج يمتلك وصفة قديمة مجربة واعتماداً موثوقاً وعلامة جودة.">
+                    <div class="opt-icon"><i class="fas fa-stamp"></i></div><div class="opt-text"><h3>ختم (Emblem)</h3><p>الاسم داخل إطار دائري</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="vertical" data-name="رأسي (Vertical Stack)" data-insight="التصميم الرأسي يكسر المألوف، وهو مثالي جداً لزجاجات التونر والسيروم الطويلة والرفيعة.">
+                    <div class="opt-icon"><i class="fas fa-arrows-alt-v"></i></div><div class="opt-text"><h3>تكديس رأسي</h3><p>توزيع الحروف بشكل عمودي</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="abstract" data-name="تجريدي (Abstract)" data-insight="الشكل المجرد يترك للعميل مساحة للتخيل، مما يضفي شعوراً بالفخامة والغموض الفني المثير.">
+                    <div class="opt-icon"><i class="fas fa-bahai"></i></div><div class="opt-text"><h3>رمز تجريدي</h3><p>شكل هندسي ناعم وغامض</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="icon-only" data-name="رمز أيقوني مستقل (Icon Only)" data-insight="الرمز فقط يعبر عن الثقة المطلقة والجرأة. يترك بصمة بصرية قوية في ذهن العميل بدون الحاجة للقراءة.">
+                    <div class="opt-icon"><i class="fas fa-star"></i></div><div class="opt-text"><h3>رمز مستقل</h3><p>استغناء عن النص للجرأة</p></div>
+                </div>
+                <div class="option-card" data-category="layout" data-layout="framed" data-name="إطار هندسي (Framed Box)" data-insight="الإطار يضع العلامة في صندوق هندسي يعكس الترتيب والدقة العلمية. ستايل حديث جداً.">
+                    <div class="opt-icon"><i class="fas fa-border-all"></i></div><div class="opt-text"><h3>إطار (Framed Box)</h3><p>نص داخل صندوق هندسي</p></div>
+                </div>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(2)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(4)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 4. الملمس والخلفية -->
+        <div class="step-container" id="step-4">
+            <h2 class="question-title"><i class="fas fa-layer-group"></i> 4. التأثير البصري والملمس</h2>
+            <div class="options-grid">
+                <div class="option-card" data-category="texture" data-texture="solid" data-name="لون مصمت (Matte Solid)" data-insight="اللون المصمت المطفي يعطي إحساساً بالوضوح والاحترافية. التركيز الكامل على جودة المنتج فقط.">
+                    <div class="opt-icon"><i class="fas fa-square"></i></div><div class="opt-text"><h3>مطفي صلب (Matte)</h3><p>لون نقي وقوي بدون تشتيت</p></div>
+                </div>
+                <div class="option-card" data-category="texture" data-texture="gradient" data-name="تدرج لوني انسيابي (Gradient)" data-insight="التدرج اللوني يوحي بالانسيابية، التحول الإيجابي، والسوائل الفعالة. ممتاز للسيرومات والمرطبات.">
+                    <div class="opt-icon"><i class="fas fa-magic"></i></div><div class="opt-text"><h3>تدرج سائل</h3><p>انتقال لوني ناعم كالماء</p></div>
+                </div>
+                <div class="option-card" data-category="texture" data-texture="noise" data-name="ملمس طبيعي (Noise/Grain)" data-insight="الضوضاء تعطي إحساساً ملموساً كأن العبوة من ورق معاد تدويره، مما يعزز فكرة العضوية والاستدامة.">
+                    <div class="opt-icon"><i class="fas fa-braille"></i></div><div class="opt-text"><h3>حبيبات طبيعية</h3><p>ملمس ورقي أو رملي خفيف</p></div>
+                </div>
+                <div class="option-card" data-category="texture" data-texture="glow" data-name="توهج مركزي (Inner Glow)" data-insight="الإضاءة المركزية تسلط الضوء على العلامة وتوحي بنتائج الإشراق والنضارة الفورية للبشرة.">
+                    <div class="opt-icon"><i class="fas fa-sun"></i></div><div class="opt-text"><h3>توهج (Glow)</h3><p>إضاءة مركزة تشع من الداخل</p></div>
+                </div>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(3)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(5)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 5. نبرة العلامة -->
+        <div class="step-container" id="step-5">
+            <h2 class="question-title"><i class="fas fa-bullhorn"></i> 5. الشعار اللفظي والرسالة (Slogan / Tagline)</h2>
+            <div class="options-grid" style="grid-template-columns: 1fr;">
+                <div class="option-card" data-category="voice" data-tagline="CLINICALLY PROVEN SKINCARE" data-name="علمي وموثوق" data-insight="رسالة تخاطب العقل. تؤكد أن المنتج معتمد ومختبر طبياً، مما يبدد أي شكوك لدى العميل.">
+                    <div class="opt-icon"><i class="fas fa-microscope"></i></div><div class="opt-text"><h3>علمي وموثوق</h3><p>Clinically Proven Skincare</p></div>
+                </div>
+                <div class="option-card" data-category="voice" data-tagline="PARIS • BORN IN NATURE" data-name="فخامة وتراث" data-insight="تخاطب العاطفة عبر ربط العلامة بمدينة عريقة والطبيعة، مما يرفع القيمة المدركة بشكل خيالي.">
+                    <div class="opt-icon"><i class="fas fa-crown"></i></div><div class="opt-text"><h3>فخامة وتراث</h3><p>Paris • Born In Nature</p></div>
+                </div>
+                <div class="option-card" data-category="voice" data-tagline="LESS IS MORE." data-name="بساطة مينيمالية" data-insight="جملة قوية ومباشرة للمستهلك الحديث، تخبره أن مكوناتنا قليلة ومدروسة، ولكن مفعولها سحري.">
+                    <div class="opt-icon"><i class="fas fa-minus"></i></div><div class="opt-text"><h3>بساطة مينيمالية</h3><p>Less Is More.</p></div>
+                </div>
+                <div class="option-card" data-category="voice" data-tagline="MIND. BODY. SKIN." data-name="رعاية شاملة" data-insight="رسالة تخاطب الروح، تجعل استخدام المنتج أشبه بجلسة رعاية صحية ونفسية متكاملة وليست مجرد تجميل.">
+                    <div class="opt-icon"><i class="fas fa-yin-yang"></i></div><div class="opt-text"><h3>رعاية شاملة (Holistic)</h3><p>Mind. Body. Skin.</p></div>
+                </div>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(4)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(6)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 6. الجمهور والتموضع -->
+        <div class="step-container" id="step-6">
+            <h2 class="question-title"><i class="fas fa-users"></i> 6. التموضع الاستراتيجي</h2>
+            <div class="input-group">
+                <label>من هو العميل المثالي لـ Rovera؟</label>
+                <p>صِف العميل (مثال: شابات جامعيات يبحثن عن النضارة المشرقة، أم سيدات مجتمع يبحثن عن الفخامة ومكافحة التجاعيد العميقة؟)</p>
+                <textarea id="target_audience" rows="2" placeholder="اكتب وصف العميل المستهدف بدقة..."></textarea>
+            </div>
+            <div class="input-group">
+                <label>التموضع السعري (Pricing Tier):</label>
+                <p>تحديد السعر يؤثر مباشرة على شكل عبوات الشحن ومواد التغليف.</p>
+                <select id="pricing_tier">
+                    <option value="فئة فاخرة جداً (Niche/Premium) - أسعار مرتفعة وجودة حصرية">فئة فاخرة جداً (Premium) - أسعار مرتفعة وجودة حصرية</option>
+                    <option value="فئة متوسطة عليا (Masstige) - جودة ممتازة بأسعار معقولة">فئة متوسطة عليا (Masstige) - جودة ممتازة بأسعار معقولة</option>
+                    <option value="في متناول الجميع (Mass Market) - انتشار واسع واقتصادي">في متناول الجميع (Mass Market) - انتشار واسع واقتصادي</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>قناة البيع الأساسية (Distribution):</label>
+                <p>أين سيباع المنتج بشكل أساسي؟</p>
+                <select id="sales_channel">
+                    <option value="وصفات أطباء وعيادات (Medical/Clinics)">وصفات أطباء وعيادات (تركيز على الفعالية الطبية)</option>
+                    <option value="صيدليات كبرى (Pharmacies)">صيدليات كبرى (يجب أن يخطف العين على الرف)</option>
+                    <option value="أونلاين وسوشيال ميديا (E-commerce)">أونلاين وسوشيال ميديا (تصميم جذاب للتصوير Unboxing)</option>
+                </select>
+            </div>
+            <div class="nav-buttons"><button type="button" class="btn-prev" onclick="prevStep(5)">رجوع</button><button type="button" class="btn-next" onclick="nextStep(7)">التالي <i class="fas fa-arrow-left"></i></button></div>
+        </div>
+
+        <!-- 7. البيئة التنافسية والإرسال -->
+        <div class="step-container" id="step-7">
+            <h2 class="question-title"><i class="fas fa-shield-alt"></i> 7. البيئة التنافسية والاعتماد</h2>
+            <div class="input-group">
+                <label>الخطوط الحمراء (Red Flags) 🚫</label>
+                <p>ما هي العناصر، الألوان، أو الرموز التي ترفض تماماً رؤيتها في تصميم الشعار؟</p>
+                <textarea id="red_flags" rows="2" placeholder="مثال: لا أريد استخدام اللون الزهري، ولا أشكال الزهور التقليدية..."></textarea>
+            </div>
+            <div class="input-group">
+                <label>المنافسون على الرف 🤝</label>
+                <p>عندما توضع منتجات Rovera على أرفف (صيدلية العزبي)، بجوار أي علامات تجارية تتمنى أن تصطف لتعكس نفس قيمتها وقوتها؟</p>
+                <input type="text" id="competitors" placeholder="مثال: Vichy, CeraVe, The Ordinary, La Roche-Posay...">
+            </div>
+            <div class="nav-buttons" style="flex-direction: column; border: none;">
+                <button type="button" class="btn-prev" style="width: 100%; justify-content: center;" onclick="prevStep(6)">رجوع لتعديل الخيارات</button>
+                <button type="button" class="btn-whatsapp" onclick="sendToWhatsApp()"><i class="fab fa-whatsapp"></i> إرسال الرؤية الاستراتيجية واعتماد الهوية</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- الجانب الأيسر (المحاكي) -->
+    <div class="preview-panel" id="preview-panel">
+        <div class="preview-overlay" id="overlay-texture"></div>
+        <div id="live-canvas">
+            <i id="live-icon" class="fas fa-leaf"></i>
+            <div id="live-text">ROVERA</div>
+            <div id="live-sub">SKINCARE ESSENTIALS</div>
+        </div>
+        <div class="insight-box" id="insight-box">
+            <div class="insight-title"><i class="fas fa-bolt"></i> التحليل الاستراتيجي للباطن</div>
+            <div class="insight-text" id="insight-text">مرر الماوس لاكتشاف كيف يترجم العقل الباطن للعميل هذا التغيير البصري وتأثيره على قرار الشراء.</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentBrand = {
+        bg: '#111', color: '#d4af37', font: "'Playfair Display', serif", spacing: '2px', case: 'uppercase', weight: '400', style: 'normal',
+        layout: 'text-only', icon: 'fa-leaf', texture: 'solid', tagline: 'SKINCARE ESSENTIALS',
+        colorName: 'غير محدد', fontName: 'غير محدد', layoutName: 'غير محدد',
+        textureName: 'غير محدد', voiceName: 'غير محدد'
+    };
+
+    const previewPanel = document.getElementById('preview-panel');
+    const overlayTexture = document.getElementById('overlay-texture');
+    const liveText = document.getElementById('live-text');
+    const liveSub = document.getElementById('live-sub');
+    const liveIcon = document.getElementById('live-icon');
+    const liveCanvas = document.getElementById('live-canvas');
+    const insightBox = document.getElementById('insight-box');
+    const insightText = document.getElementById('insight-text');
+    const progressBar = document.getElementById('progress-bar'); 
+    const totalSteps = 7; 
+
+    function updateProgress(stepIndex) {
+        const percentage = (stepIndex / totalSteps) * 100;
+        progressBar.style.width = percentage + '%';
+    }
+
+    function updateSimulator(data) {
+        liveCanvas.style.border = 'none'; liveCanvas.style.borderRadius = '0';
+        liveCanvas.style.width = 'auto'; liveCanvas.style.height = 'auto';
+        liveCanvas.style.padding = '0'; liveText.style.display = 'block';
+        liveSub.style.display = 'block'; liveCanvas.style.flexDirection = 'column';
+
+        if (data.bg) previewPanel.style.backgroundColor = data.bg;
+        if (data.color) {
+            liveText.style.color = data.color; liveSub.style.color = data.color; liveIcon.style.color = data.color;
+            document.documentElement.style.setProperty('--live-shadow', data.color); 
+        }
+        
+        if (data.font) {
+            liveText.style.fontFamily = data.font; liveText.style.letterSpacing = data.spacing || '0px';
+            liveText.style.textTransform = data.case || 'none'; liveText.style.fontWeight = data.weight || '400';
+            liveText.style.fontStyle = data.fontstyle || 'normal';
+            
+            let isMobile = window.innerWidth <= 900;
+            if (data.font.includes('Alex Brush')) {
+                liveText.style.fontSize = isMobile ? '3.5rem' : '5.5rem'; liveText.innerHTML = "Rovera";
+            } else {
+                liveText.style.fontSize = isMobile ? '2.5rem' : '4rem'; liveText.innerHTML = "ROVERA";
+            }
+        }
+
+        if (data.layout) {
+            liveIcon.style.display = 'none';
+            if (!liveText.style.fontFamily.includes('Alex Brush')) liveText.innerHTML = "ROVERA";
+
+            let isMobile = window.innerWidth <= 900;
+
+            if (data.layout === 'icon-text') {
+                liveIcon.style.display = 'block'; liveIcon.className = `fas ${data.icon || currentBrand.icon}`; 
+                liveIcon.style.fontSize = isMobile ? '35px' : '50px';
+            } else if (data.layout === 'lettermark') {
+                liveText.innerHTML = "R"; liveText.style.fontSize = isMobile ? '5rem' : '7rem';
+            } else if (data.layout === 'emblem') {
+                liveCanvas.style.border = `2px solid ${data.color || currentBrand.color}`;
+                liveCanvas.style.borderRadius = '50%';
+                let size = isMobile ? '180px' : '260px';
+                liveCanvas.style.width = size; liveCanvas.style.height = size;
+                liveText.style.fontSize = isMobile ? '1.5rem' : '2rem';
+            } else if (data.layout === 'vertical') {
+                liveText.innerHTML = "R<br>O<br>V<br>E<br>R<br>A";
+                liveText.style.fontSize = isMobile ? '1.8rem' : '2.5rem'; liveText.style.lineHeight = '0.9';
+            } else if (data.layout === 'abstract') {
+                liveIcon.style.display = 'block'; liveIcon.className = 'fas fa-bahai'; 
+                liveIcon.style.fontSize = isMobile ? '45px' : '60px';
+            } else if (data.layout === 'icon-only') {
+                liveIcon.style.display = 'block'; liveIcon.className = `fas ${data.icon || currentBrand.icon || 'fa-star'}`;
+                liveIcon.style.fontSize = isMobile ? '80px' : '120px';
+                liveText.style.display = 'none'; liveSub.style.display = 'none';
+            } else if (data.layout === 'framed') {
+                liveCanvas.style.border = `1.5px solid ${data.color || currentBrand.color}`;
+                liveCanvas.style.padding = isMobile ? '15px 30px' : '25px 50px';
+            }
+        }
+
+        if (data.texture) {
+            overlayTexture.className = 'preview-overlay';
+            if (data.texture === 'gradient') { overlayTexture.classList.add('texture-gradient'); overlayTexture.style.opacity = '0.8'; }
+            else if (data.texture === 'noise') { overlayTexture.classList.add('texture-noise'); overlayTexture.style.opacity = '0.5'; }
+            else if (data.texture === 'glow') { overlayTexture.classList.add('texture-glow'); overlayTexture.style.opacity = '0.6'; }
+            else { overlayTexture.style.opacity = '0'; }
+        }
+
+        if (data.tagline) { liveSub.innerText = data.tagline; }
+        if (data.insight) { insightText.innerHTML = data.insight; insightBox.classList.add('visible'); }
+    }
+
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            if (window.innerWidth <= 900) return; 
+            const data = {
+                bg: this.getAttribute('data-bg'), color: this.getAttribute('data-color'),
+                font: this.getAttribute('data-font'), spacing: this.getAttribute('data-spacing'), case: this.getAttribute('data-case'), weight: this.getAttribute('data-weight'), fontstyle: this.getAttribute('data-fontstyle'),
+                layout: this.getAttribute('data-layout'), icon: this.getAttribute('data-icon'),
+                texture: this.getAttribute('data-texture'), tagline: this.getAttribute('data-tagline'), insight: this.getAttribute('data-insight')
+            };
+            updateSimulator(data);
+        });
+
+        card.addEventListener('mouseleave', function() { 
+            if (window.innerWidth <= 900) return;
+            updateSimulator(currentBrand); insightBox.classList.remove('visible'); 
+        });
+
+        card.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+
+            let name = this.getAttribute('data-name');
+            if (this.getAttribute('data-bg')) { currentBrand.bg = this.getAttribute('data-bg'); currentBrand.color = this.getAttribute('data-color'); currentBrand.colorName = name; }
+            if (this.getAttribute('data-font')) { currentBrand.font = this.getAttribute('data-font'); currentBrand.spacing = this.getAttribute('data-spacing'); currentBrand.case = this.getAttribute('data-case'); currentBrand.weight = this.getAttribute('data-weight'); currentBrand.style = this.getAttribute('data-fontstyle'); currentBrand.fontName = name; }
+            if (this.getAttribute('data-layout')) { currentBrand.layout = this.getAttribute('data-layout'); currentBrand.icon = this.getAttribute('data-icon'); currentBrand.layoutName = name; }
+            if (this.getAttribute('data-texture')) { currentBrand.texture = this.getAttribute('data-texture'); currentBrand.textureName = name;}
+            if (this.getAttribute('data-tagline')) { currentBrand.tagline = this.getAttribute('data-tagline'); currentBrand.voiceName = name; }
+            
+            if (window.innerWidth <= 900) { updateSimulator(currentBrand); }
+
+            previewPanel.style.transform = 'scale(0.98)'; setTimeout(() => previewPanel.style.transform = 'scale(1)', 150);
+            
+            let activeStep = this.closest('.step-container');
+            if(activeStep) {
+                let nextBtn = activeStep.querySelector('.btn-next');
+                if(nextBtn) nextBtn.classList.add('ready-to-go');
+            }
+        });
+    });
+
+    const steps = document.querySelectorAll('.step-container');
+    
+    function nextStep(index) { 
+        let currentStepIndex = index - 1;
+        let currentStepDiv = document.getElementById('step-' + currentStepIndex);
+        
+        if (currentStepIndex >= 1 && currentStepIndex <= 5) {
+            let hasSelection = currentStepDiv.querySelector('.option-card.selected');
+            if (!hasSelection) {
+                alert("يرجى اختيار أحد الخيارات قبل الانتقال للخطوة التالية 🌿");
+                return; 
+            }
+        }
+
+        steps.forEach(s => s.classList.remove('active')); 
+        document.getElementById('step-' + index).classList.add('active'); 
+        document.querySelector('.controls-panel').scrollTo(0,0);
+        updateProgress(index); 
+    }
+    
+    function prevStep(index) { 
+        steps.forEach(s => s.classList.remove('active')); 
+        document.getElementById('step-' + index).classList.add('active'); 
+        document.querySelector('.controls-panel').scrollTo(0,0);
+        updateProgress(index); 
+    }
+
+    function sendToWhatsApp() {
+        const audience = document.getElementById('target_audience').value || 'لم يتم التحديد';
+        const pricing = document.getElementById('pricing_tier').value || 'لم يتم التحديد';
+        const channel = document.getElementById('sales_channel').value || 'لم يتم التحديد';
+        const redFlags = document.getElementById('red_flags').value || 'لا يوجد';
+        const competitors = document.getElementById('competitors').value || 'لم يتم التحديد';
+
+        const message = `مرحباً، بصفتي مؤسس شريك في شركة Rovera 🌿، هذه هي رؤيتي للهوية البصرية الاستراتيجية:
+
+🎨 *الهوية اللونية:* ${currentBrand.colorName}
+✍️ *نبرة الخط:* ${currentBrand.fontName}
+📐 *هيكل الشعار المعماري:* ${currentBrand.layoutName}
+✨ *الملمس والتأثير البصري:* ${currentBrand.textureName}
+📣 *الشعار اللفظي والرسالة:* ${currentBrand.voiceName} (${currentBrand.tagline})
+
+👥 *وصف العميل المستهدف:*
+${audience}
+
+💰 *التموضع السعري:* 
+${pricing}
+
+🏪 *قناة البيع الأساسية:* 
+${channel}
+
+🚫 *الخطوط الحمراء (أشياء أرفضها):*
+${redFlags}
+
+🤝 *المنافسون على أرفف صيدلية العزبي:*
+${competitors}
+
+يرجى دراسة هذه المعطيات لبناء هوية بصرية مذهلة.`;
+
+        const phone = "201019249195";
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+
+        window.open(whatsappUrl, '_blank');
+    }
+
+    updateProgress(0);
+</script>
+
+</body>
+</html>
